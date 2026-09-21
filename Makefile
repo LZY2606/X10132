@@ -14,6 +14,9 @@ lint:
 test:
 	$(GO) test -v $(PACKAGES)
 
+verify:
+	./verify.sh
+
 clean:
 	rm -rf ./autobahn/bin/*
 	rm -rf ./autobahn/report/*
@@ -21,5 +24,5 @@ clean:
 autobahn:
 	chmod +x ./autobahn/script/run.sh & ./autobahn/script/run.sh
 
-.PHONY: all vet lint test clean  autobahn
+.PHONY: all vet lint test verify clean  autobahn
 

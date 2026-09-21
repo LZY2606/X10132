@@ -33,5 +33,5 @@ jobs:
           ulimit -n 30000
           go env
           echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: go test
-        run: go test -covermode=atomic -timeout 60s -coverprofile="./coverage"
+      - name: verify
+        run: ./verify.sh

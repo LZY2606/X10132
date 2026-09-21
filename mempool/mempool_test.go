@@ -5,6 +5,12 @@ import (
 )
 
 func TestMemPool(t *testing.T) {
+	if raceEnabled {
+		// Single-goroutine stress test: the race detector adds no coverage
+		// here, and with -race the standard sync.Pool drops pooled entries,
+		// which turns this loop into millions of 1GB allocations.
+		t.Skip("skipping stress test under the race detector")
+	}
 	pool := New(1024*1024*1024, 1024*1024*1024)
 	for i := 0; i < 1024*1024; i++ {
 		pbuf := pool.Malloc(i)

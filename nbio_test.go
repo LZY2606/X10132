@@ -525,10 +525,13 @@ func TestUnix(t *testing.T) {
 	})
 	var connSvr *Conn
 	var connCli *Conn
+	var connMux sync.RWMutex
 	g.OnOpen(func(c *Conn) {
+		connMux.Lock()
 		if connSvr == nil {
 			connSvr = c
 		}
+		connMux.Unlock()
 		c.Type()
 		c.IsTCP()
 		c.IsUDP()
@@ -537,13 +540,17 @@ func TestUnix(t *testing.T) {
 	})
 	g.OnData(func(c *Conn, data []byte) {
 		log.Println("unix onData:", c.LocalAddr().String(), c.RemoteAddr().String(), string(data))
-		if c == connSvr {
+		connMux.RLock()
+		isSvr := c == connSvr
+		isCli := c == connCli
+		connMux.RUnlock()
+		if isSvr {
 			_, err := c.Write([]byte("world"))
 			if err != nil {
 				t.Fatal(err)
 			}
 		}
-		if c == connCli && string(data) == "world" {
+		if isCli && string(data) == "world" {
 			_ = c.Close()
 		}
 	})
@@ -566,10 +573,13 @@ func TestUnix(t *testing.T) {
 	defer func() { _ = c.Close() }()
 	time.Sleep(time.Second / 10)
 	buf := []byte("hello")
-	connCli, err = g.AddConn(c)
+	cli, err := g.AddConn(c)
 	if err != nil {
 		t.Fatalf("unix AddConn: %v, %v, %v", c.LocalAddr(), c.RemoteAddr(), err)
 	}
+	connMux.Lock()
+	connCli = cli
+	connMux.Unlock()
 	_, err = connCli.Write(buf)
 	if err != nil {
 		t.Fatalf("unix Write: %v, %v, %v", c.LocalAddr(), c.RemoteAddr(), err)

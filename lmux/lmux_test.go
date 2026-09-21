@@ -11,20 +11,20 @@ func TestListenerMux(t *testing.T) {
 	maxOnlineA := 3
 	totalConn := 5
 	network := "tcp"
-	addr1 := "localhost:8001"
-	addr2 := "localhost:8002"
 	lm := New(maxOnlineA)
 
-	listen := func(addr string) net.Listener {
-		l, err := net.Listen(network, addr)
+	listen := func() net.Listener {
+		l, err := net.Listen(network, "127.0.0.1:0")
 		if err != nil {
 			t.Fatal(err)
 		}
 		return l
 	}
-	l1 := listen(addr1)
+	l1 := listen()
+	addr1 := l1.Addr().String()
 	listenerA, listenerB := lm.Mux(l1)
-	l2 := listen(addr2)
+	l2 := listen()
+	addr2 := l2.Addr().String()
 	listenerC, listenerD := lm.Mux(l2)
 	lm.Start()
 

@@ -13,12 +13,36 @@ import (
 	"time"
 )
 
-var addr = "127.0.0.1:9999"
+var addr = freeTCPAddr()
 var testfile = "test_tmp.file"
 var engine *Engine
 var testFileSize = 1024 * 1024 * 32
 
 const osWindows = "windows"
+
+func freeTCPAddr() string {
+	l, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		panic(fmt.Errorf("get free tcp addr failed: %w", err))
+	}
+	addr := l.Addr().String()
+	if err := l.Close(); err != nil {
+		panic(fmt.Errorf("close temp listener failed: %w", err))
+	}
+	return addr
+}
+
+func freeUDPAddr() *net.UDPAddr {
+	conn, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		panic(fmt.Errorf("get free udp addr failed: %w", err))
+	}
+	addr := conn.LocalAddr().(*net.UDPAddr)
+	if err := conn.Close(); err != nil {
+		panic(fmt.Errorf("close temp udp conn failed: %w", err))
+	}
+	return addr
+}
 
 func init() {
 	if err := os.WriteFile(testfile, make([]byte, testFileSize), 0600); err != nil {
@@ -284,9 +308,10 @@ func TestFuzz(t *testing.T) {
 		log.Panicf("Dial tcp4: %v", err)
 	}
 
+	dupAddr := freeTCPAddr()
 	gErr := NewEngine(Config{
 		Network: "tcp4",
-		Addrs:   []string{"127.0.0.1:8889", "127.0.0.1:8889"},
+		Addrs:   []string{dupAddr, dupAddr},
 	})
 	_ = gErr.Start()
 }
@@ -320,7 +345,8 @@ func TestUDP(t *testing.T) {
 	}
 	defer g.Stop()
 
-	addrstr := fmt.Sprintf("127.0.0.1:%d", 9999)
+	udpAddr := freeUDPAddr()
+	addrstr := udpAddr.String()
 	addr, err := net.ResolveUDPAddr("udp", addrstr)
 	if err != nil {
 		t.Fatalf("ResolveUDPAddr error: %v", err)
@@ -335,7 +361,7 @@ func TestUDP(t *testing.T) {
 	newClientConn := func() *net.UDPConn {
 		connUDP, errDial := net.DialUDP("udp4", nil, &net.UDPAddr{
 			IP:   net.IPv4(127, 0, 0, 1),
-			Port: 9999,
+			Port: udpAddr.Port,
 		})
 		if errDial != nil {
 			t.Fatalf("net.DialUDP failed: %v", err)
@@ -437,13 +463,13 @@ func TestUDP(t *testing.T) {
 
 func TestDialAsyncTCP(t *testing.T) {
 	network := "tcp"
-	addr := "127.0.0.1:10001"
+	addr := freeTCPAddr()
 	testDialAsync(t, network, addr)
 }
 
 func TestDialAsyncUDP(t *testing.T) {
 	network := "udp"
-	addr := "127.0.0.1:10001"
+	addr := freeUDPAddr().String()
 	testDialAsync(t, network, addr)
 }
 

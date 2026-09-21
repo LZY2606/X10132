@@ -2,6 +2,7 @@ package nbhttp
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -217,7 +218,14 @@ func newConn() net.Conn {
 		}
 		go func() {
 			defer func() { _ = ln.Close() }()
-			_, _ = ln.Accept()
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			// Drain the accepted connection so that responses flushed by the
+			// parser never block on a full kernel send buffer.
+			_, _ = io.Copy(io.Discard, c)
+			_ = c.Close()
 		}()
 		conn, err = net.Dial("tcp", addr)
 		if err != nil {

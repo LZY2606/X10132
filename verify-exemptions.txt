@@ -1,0 +1,10 @@
+# Cross-compilation exemptions for verify.sh, one per line:
+#
+#   <GOOS> <import-path> <reason>
+#
+# GOOS must be listed in verify-targets.txt and the import path must be a
+# real package in this module (verify_test.go enforces both). Exempted
+# packages are skipped only for that target's compile check and are recorded
+# in the manifest's "exemptions" field. Example:
+#
+# windows github.com/lesismal/nbio/example/foo requires cgo/WinAPI

@@ -1,0 +1,7 @@
+# Cross-compilation targets checked by verify.sh, one GOOS per line.
+# The host GOARCH is reused; artifacts are only compiled, never executed.
+# verify_test.go fails if a *_GOOS.go file appears for a GOOS missing here.
+linux
+darwin
+freebsd
+windows

@@ -5,15 +5,21 @@ import (
 )
 
 func TestMemPool(t *testing.T) {
-	pool := New(1024*1024*1024, 1024*1024*1024)
-	for i := 0; i < 1024*1024; i++ {
+	maxSize := 1024 * 1024 * 1024
+	smallMax := 1024 * 1024
+	if raceEnabled {
+		maxSize = 1024 * 1024
+		smallMax = 64 * 1024
+	}
+	pool := New(maxSize, maxSize)
+	for i := 0; i < smallMax; i++ {
 		pbuf := pool.Malloc(i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)
 		}
 		pool.Free(pbuf)
 	}
-	for i := 1024 * 1024; i < 1024*1024*1024; i += 1024 * 1024 {
+	for i := smallMax; i < maxSize; i += smallMax {
 		pbuf := pool.Malloc(i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)
@@ -22,7 +28,7 @@ func TestMemPool(t *testing.T) {
 	}
 
 	pbuf := pool.Malloc(0)
-	for i := 1; i < 1024*1024; i++ {
+	for i := 1; i < smallMax; i++ {
 		pbuf = pool.Realloc(pbuf, i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)

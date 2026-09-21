@@ -5,7 +5,14 @@ import (
 )
 
 func TestMemPool(t *testing.T) {
-	pool := New(1024*1024*1024, 1024*1024*1024)
+	maxBufferSize := 1024 * 1024 * 1024
+	if raceEnabled {
+		// The race detector multiplies the memory footprint of large live
+		// buffers severalfold, making a 1GB pool infeasible under -race.
+		// Exercise the same code paths with smaller sizes instead.
+		maxBufferSize = 4 * 1024 * 1024
+	}
+	pool := New(maxBufferSize, maxBufferSize)
 	for i := 0; i < 1024*1024; i++ {
 		pbuf := pool.Malloc(i)
 		if len(*pbuf) != i {
@@ -13,7 +20,7 @@ func TestMemPool(t *testing.T) {
 		}
 		pool.Free(pbuf)
 	}
-	for i := 1024 * 1024; i < 1024*1024*1024; i += 1024 * 1024 {
+	for i := 1024 * 1024; i < maxBufferSize; i += 1024 * 1024 {
 		pbuf := pool.Malloc(i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -13,7 +14,30 @@ import (
 	"time"
 )
 
-var addr = "127.0.0.1:9999"
+var addr = reserveLocalAddr("tcp")
+
+// reserveLocalAddr reserves a free loopback address for the given network
+// ("tcp" or "udp"), so concurrent test runs don't collide on fixed ports.
+func reserveLocalAddr(network string) string {
+	if network == "udp" {
+		udpAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
+		if err != nil {
+			log.Panicf("resolve udp addr failed: %v", err)
+		}
+		conn, err := net.ListenUDP("udp", udpAddr)
+		if err != nil {
+			log.Panicf("reserve udp addr failed: %v", err)
+		}
+		defer func() { _ = conn.Close() }()
+		return conn.LocalAddr().String()
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		log.Panicf("reserve tcp addr failed: %v", err)
+	}
+	defer func() { _ = listener.Close() }()
+	return listener.Addr().String()
+}
 var testfile = "test_tmp.file"
 var engine *Engine
 var testFileSize = 1024 * 1024 * 32
@@ -320,8 +344,7 @@ func TestUDP(t *testing.T) {
 	}
 	defer g.Stop()
 
-	addrstr := fmt.Sprintf("127.0.0.1:%d", 9999)
-	addr, err := net.ResolveUDPAddr("udp", addrstr)
+	addr, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("ResolveUDPAddr error: %v", err)
 	}
@@ -329,13 +352,14 @@ func TestUDP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listen error: %v", err)
 	}
+	serverAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	lisConn, _ := g.AddConn(conn)
 
 	newClientConn := func() *net.UDPConn {
 		connUDP, errDial := net.DialUDP("udp4", nil, &net.UDPAddr{
 			IP:   net.IPv4(127, 0, 0, 1),
-			Port: 9999,
+			Port: serverAddr.Port,
 		})
 		if errDial != nil {
 			t.Fatalf("net.DialUDP failed: %v", err)
@@ -437,13 +461,13 @@ func TestUDP(t *testing.T) {
 
 func TestDialAsyncTCP(t *testing.T) {
 	network := "tcp"
-	addr := "127.0.0.1:10001"
+	addr := reserveLocalAddr(network)
 	testDialAsync(t, network, addr)
 }
 
 func TestDialAsyncUDP(t *testing.T) {
 	network := "udp"
-	addr := "127.0.0.1:10001"
+	addr := reserveLocalAddr(network)
 	testDialAsync(t, network, addr)
 }
 
@@ -452,7 +476,7 @@ func TestDialAsyncUnix(t *testing.T) {
 		return
 	}
 	network := "unix"
-	addr := "unix.server"
+	addr := filepath.Join(t.TempDir(), "unix.server")
 	testDialAsync(t, network, addr)
 }
 
@@ -517,7 +541,7 @@ func TestUnix(t *testing.T) {
 		return
 	}
 
-	unixAddr := "./test.unix"
+	unixAddr := filepath.Join(t.TempDir(), "test.unix")
 	defer func() { _ = os.Remove(unixAddr) }()
 	g := NewEngine(Config{
 		Network: "unix",

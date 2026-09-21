@@ -32,12 +32,6 @@ jobs:
           printf "\n\ngo environment:\n\n"
           go env
           echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: go test
-        run: go test -covermode=atomic -timeout 60s -coverprofile="./coverage"
-      - name: update code coverage report
-        uses: codecov/codecov-action@v1.2.1
-        with:
-          files: "./coverage"
-          flags: unittests
-          verbose: true
-          name: codecov-nbio
+      - name: verify
+        shell: bash
+        run: ./verify.sh

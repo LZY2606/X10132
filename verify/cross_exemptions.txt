@@ -1,0 +1,16 @@
+# Cross-compilation exemptions for verify.sh.
+#
+# Each non-comment line exempts one package from the cross-compilation
+# check of one target platform. Use this only for packages that genuinely
+# cannot be cross-compiled (e.g. they require cgo) or that are not meant
+# for the target at all.
+#
+# Format (fields separated by whitespace, reason is required):
+#
+#   <goos>/<goarch> <package-import-path> <reason>
+#
+# Example:
+#   windows/amd64 github.com/lesismal/nbio/example/cgotool requires cgo, disabled in cross builds
+#
+# verify/verify_test.go validates that every entry still refers to a real
+# package and a configured cross target, so stale entries fail the gate.

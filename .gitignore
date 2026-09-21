@@ -29,6 +29,7 @@ Pods/
 *.log
 coverage/
 .coverage
+artifacts/
 .nyc_output/
 .cache/
 .parcel-cache/

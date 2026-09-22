@@ -5,15 +5,31 @@ import (
 )
 
 func TestMemPool(t *testing.T) {
+	// Scale the stress loops down under the race detector: every
+	// allocation is instrumented there, and the full gigabyte-scale
+	// loops would take orders of magnitude longer while exercising
+	// the same code paths.
+	maxSmall := 1024 * 1024
+	maxHuge := 1024 * 1024 * 1024
+	hugeStep := 1024 * 1024
 	pool := New(1024*1024*1024, 1024*1024*1024)
-	for i := 0; i < 1024*1024; i++ {
+	if raceEnabled {
+		maxSmall = 16 * 1024
+		maxHuge = 64 * 1024 * 1024
+		hugeStep = 4 * 1024 * 1024
+		// The race detector triggers GC far more often, and sync.Pool
+		// drops its entries on every GC: with gigabyte pool buffers
+		// each miss re-allocates and re-zeroes a gigabyte.
+		pool = New(maxSmall, maxSmall)
+	}
+	for i := 0; i < maxSmall; i++ {
 		pbuf := pool.Malloc(i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)
 		}
 		pool.Free(pbuf)
 	}
-	for i := 1024 * 1024; i < 1024*1024*1024; i += 1024 * 1024 {
+	for i := 1024 * 1024; i < maxHuge; i += hugeStep {
 		pbuf := pool.Malloc(i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)
@@ -22,7 +38,7 @@ func TestMemPool(t *testing.T) {
 	}
 
 	pbuf := pool.Malloc(0)
-	for i := 1; i < 1024*1024; i++ {
+	for i := 1; i < maxSmall; i++ {
 		pbuf = pool.Realloc(pbuf, i)
 		if len(*pbuf) != i {
 			t.Fatalf("invalid len: %v != %v", len(*pbuf), i)

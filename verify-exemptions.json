@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "comment": "Exemptions and platform metadata for verify.sh. crossBuildExemptions lists packages that may not cross-compile for a target (e.g. cgo); each entry must reference a real package and is verified by verify_test.go. platformsNotGated lists GOOS values that appear in build tags of repository sources but are intentionally not part of the offline cross-build gate.",
+  "crossBuildExemptions": [],
+  "platformsNotGated": [
+    {
+      "goos": "netbsd",
+      "reason": "shares the kqueue/bsd sources with the gated darwin and freebsd targets; not part of the offline gate"
+    },
+    {
+      "goos": "openbsd",
+      "reason": "shares the kqueue/bsd sources with the gated darwin and freebsd targets; not part of the offline gate"
+    },
+    {
+      "goos": "dragonfly",
+      "reason": "shares the kqueue/bsd sources with the gated darwin and freebsd targets; not part of the offline gate"
+    }
+  ]
+}

@@ -1,9 +1,12 @@
 GO?=go
 PACKAGE_DIRS=       $(shell $(GO) list -f '{{ .Dir }}' ./...|grep -v 'lesismal/nbio/examples')
 PACKAGES=           $(shell $(GO) list ./...|grep -v 'lesismal/nbio/examples')
-.PHONY: all vet lint
+.PHONY: all vet lint verify
 
 all: vet lint test
+
+verify:
+	./verify.sh
 
 vet:
 	$(GO) vet $(PACKAGES)
@@ -21,5 +24,4 @@ clean:
 autobahn:
 	chmod +x ./autobahn/script/run.sh & ./autobahn/script/run.sh
 
-.PHONY: all vet lint test clean  autobahn
-
+.PHONY: all vet lint verify test clean  autobahn

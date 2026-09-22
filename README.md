@@ -330,6 +330,24 @@ func main() {
 ```
 
 
+## Development
+
+Run the offline verification gate before pushing:
+
+```sh
+./verify.sh
+```
+
+It checks `gofmt` and `go vet`, runs the unit tests and the race-enabled
+tests for the current platform, compiles all packages, and cross-compiles
+every package for `linux`, `darwin`, `freebsd` and `windows` (artifacts
+are never executed). A machine-readable report is written to
+`artifacts/verify-manifest.json`. Packages that cannot be cross-compiled
+for a target must be listed explicitly in `verify-exemptions.json`.
+The Autobahn suite (`make autobahn`) requires external services and is
+not part of this offline gate.
+
+
 ## Credits
 - [xtaci/gaio](https://github.com/xtaci/gaio)
 - [gorilla/websocket](https://github.com/gorilla/websocket)

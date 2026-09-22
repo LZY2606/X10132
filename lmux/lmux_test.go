@@ -52,6 +52,7 @@ func TestListenerMux(t *testing.T) {
 	go accept(listenerC, chC)
 	go accept(listenerD, chD)
 
+	var mu sync.Mutex
 	dialN := func(n int, addr string) {
 		wg.Add(1)
 		go func() {
@@ -62,7 +63,9 @@ func TestListenerMux(t *testing.T) {
 					chErr <- err
 					break
 				}
+				mu.Lock()
 				conns = append(conns, conn)
+				mu.Unlock()
 			}
 		}()
 	}
